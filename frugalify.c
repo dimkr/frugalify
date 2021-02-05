@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
 
     for (i = 0; i < sizeof(dirs) / sizeof(dirs[0]); ++i) {
-        if (mkdir(dirs[i], 0755) == 0 || (errno == EEXIST))
+        if ((mkdir(dirs[i], 0755) == 0) || (errno == EEXIST))
             continue;
 
         if ((errno != EROFS) || ro)
