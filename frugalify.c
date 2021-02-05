@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <sys/sysmacros.h>
+#include <linux/major.h>
 #include <errno.h>
 #include <sys/mount.h>
 
@@ -115,6 +117,7 @@ int main(int argc, char *argv[])
     static char sfspath[MAXSFS][128], br[1024] = FSOPTS_HEAD;
     struct dirent ent[MAXSFS];
     char *sfs[MAXSFS] = {NULL}, sfsmnt[sizeof("/save/.sfs0")] = "/save/.sfs";
+    struct stat stbuf;
     const char *loop;
     size_t len, brlen = sizeof(FSOPTS_HEAD) - 1;
     ssize_t out;
@@ -166,6 +169,24 @@ int main(int argc, char *argv[])
 
     if (!sfs[0])
         return EXIT_FAILURE;
+
+    if (stat("/", &stbuf) < 0)
+        return EXIT_FAILURE;
+
+    // assumption: if we're booting from read-only media, /save and /.work
+    // already exist
+    if ((stbuf.st_dev == makedev(SCSI_CDROM_MAJOR, 0)) ||
+        (stbuf.st_dev == makedev(SCSI_CDROM_MAJOR, 1))) {
+        // we need some writable file system as the upper layer, so we mount a
+        // tmpfs
+        if (mount("save", "/save", "tmpfs", 0, NULL) < 0)
+            return EXIT_FAILURE;
+
+#ifndef HAVE_AUFS
+        if (mount("work", "/.work", "tmpfs", 0, NULL) < 0)
+            return EXIT_FAILURE;
+#endif
+    }
 
     for (i = 0; i < sizeof(dirs) / sizeof(dirs[0]); ++i) {
         if ((mkdir(dirs[i], 0755) < 0) && (errno != EEXIST))
