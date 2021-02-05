@@ -10,8 +10,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Toolchains
         run: |
-          curl -L https://github.com/dimkr/toolchains/releases/latest/download/arm-any32-linux-musleabi.tar.gz | sudo tar -xzvf - -C /
-          curl -L https://github.com/dimkr/toolchains/releases/latest/download/i386-any32-linux-musl.tar.gz | sudo tar -xzvf - -C /
+          curl -L https://github.com/dimkr/toolchains/releases/latest/download/arm-any32-linux-musleabi.tar.gz | sudo tar -xvf - -C /
+          curl -L https://github.com/dimkr/toolchains/releases/latest/download/i386-any32-linux-musl.tar.gz | sudo tar -xvf - -C /
       - name: ARM Build
         run: |
           . /opt/x-tools/arm-any32-linux-musleabi/activate
