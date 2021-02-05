@@ -9,8 +9,6 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <dirent.h>
-#include <sys/sysmacros.h>
-#include <linux/major.h>
 #include <errno.h>
 #include <sys/mount.h>
 
@@ -124,6 +122,7 @@ int main(int argc, char *argv[])
     DIR *root;
     struct dirent *pent;
     unsigned int nsfs = 0, i;
+    int ro = 0;
 
     // protect against accidental click
     if (getpid() != 1)
@@ -173,24 +172,21 @@ int main(int argc, char *argv[])
     if (stat("/", &stbuf) < 0)
         return EXIT_FAILURE;
 
-    // assumption: if we're booting from read-only media, /save and /.work
-    // already exist
-    if ((stbuf.st_dev == makedev(SCSI_CDROM_MAJOR, 0)) ||
-        (stbuf.st_dev == makedev(SCSI_CDROM_MAJOR, 1))) {
-        // we need some writable file system as the upper layer, so we mount a
-        // tmpfs
+    for (i = 0; i < sizeof(dirs) / sizeof(dirs[0]); ++i) {
+        if (mkdir(dirs[i], 0755) == 0 || (errno == EEXIST))
+            continue
+
+        if ((errno != EROFS) || ro)
+            return EXIT_FAILURE;
+
+        // we need some writable file system as the upper layer, so we mount
+        // a tmpfs; we assume that /save and /.work already exist if we're
+        // booting from optical media or from a corrupt file system mounted
+        // read-only, and we assume that only the first mkdir() can return EROFS
         if (mount("save", "/save", "tmpfs", 0, NULL) < 0)
             return EXIT_FAILURE;
 
-#ifndef HAVE_AUFS
-        if (mount("work", "/.work", "tmpfs", 0, NULL) < 0)
-            return EXIT_FAILURE;
-#endif
-    }
-
-    for (i = 0; i < sizeof(dirs) / sizeof(dirs[0]); ++i) {
-        if ((mkdir(dirs[i], 0755) < 0) && (errno != EEXIST))
-            return EXIT_FAILURE;
+        ro = 1;
     }
 
     // mount a devtmpfs so we have the loop%d device nodes
@@ -234,6 +230,11 @@ cpy:
     // we no longer need /dev
     umount2("/save/dev", MNT_DETACH);
     rmdir("/save/dev");
+
+#ifndef HAVE_AUFS
+    if (ro && mount("work", "/.work", "tmpfs", 0, NULL) < 0)
+        return EXIT_FAILURE;
+#endif
 
     // mount a union file system with the SFS mount points and /save on top
     if (mount(FS, "/save/.pup_new", FS, MS_NOATIME, br) < 0)
