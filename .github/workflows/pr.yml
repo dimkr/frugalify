@@ -1,0 +1,19 @@
+on: pull_request
+
+name: Build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install Toolchain
+        run: curl -L https://github.com/dimkr/toolchains/releases/latest/download/arm-any32-linux-musleabi.tar.gz | sudo tar -xzvf - -C /
+      - name: ARM Build
+        run: |
+          . /opt/x-tools/arm-any32-linux-musleabi/activate
+          arm-any32-linux-musleabi-cc $CFLAGS -DHAVE_STRLCPY -DHAVE_AUFS frugalify.c $LDFLAGS -o frugalify-aufs-arm
+          arm-any32-linux-musleabi-strip -s -R .note -R .comment frugalify-aufs-arm
+          arm-any32-linux-musleabi-cc $CFLAGS -DHAVE_STRLCPY frugalify.c $LDFLAGS -o frugalify-overlayfs-arm
+          arm-any32-linux-musleabi-strip -s -R .note -R .comment frugalify-overlayfs-arm
