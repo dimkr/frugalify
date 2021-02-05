@@ -115,7 +115,6 @@ int main(int argc, char *argv[])
     static char sfspath[MAXSFS][128], br[1024] = FSOPTS_HEAD;
     struct dirent ent[MAXSFS];
     char *sfs[MAXSFS] = {NULL}, sfsmnt[sizeof("/save/.sfs0")] = "/save/.sfs";
-    struct stat stbuf;
     const char *loop;
     size_t len, brlen = sizeof(FSOPTS_HEAD) - 1;
     ssize_t out;
@@ -167,9 +166,6 @@ int main(int argc, char *argv[])
     closedir(root);
 
     if (!sfs[0])
-        return EXIT_FAILURE;
-
-    if (stat("/", &stbuf) < 0)
         return EXIT_FAILURE;
 
     for (i = 0; i < sizeof(dirs) / sizeof(dirs[0]); ++i) {
