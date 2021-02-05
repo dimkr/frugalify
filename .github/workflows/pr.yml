@@ -8,8 +8,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Install Toolchain
-        run: curl -L https://github.com/dimkr/toolchains/releases/latest/download/arm-any32-linux-musleabi.tar.gz | sudo tar -xzvf - -C /
+      - name: Install Toolchains
+        run: |
+          curl -L https://github.com/dimkr/toolchains/releases/latest/download/arm-any32-linux-musleabi.tar.gz | sudo tar -xzvf - -C /
+          curl -L https://github.com/dimkr/toolchains/releases/latest/download/i386-any32-linux-musl.tar.gz | sudo tar -xzvf - -C /
       - name: ARM Build
         run: |
           . /opt/x-tools/arm-any32-linux-musleabi/activate
@@ -17,3 +19,10 @@ jobs:
           arm-any32-linux-musleabi-strip -s -R .note -R .comment frugalify-aufs-arm
           arm-any32-linux-musleabi-cc $CFLAGS -DHAVE_STRLCPY frugalify.c $LDFLAGS -o frugalify-overlayfs-arm
           arm-any32-linux-musleabi-strip -s -R .note -R .comment frugalify-overlayfs-arm
+      - name: x86 Build
+        run: |
+          . /opt/x-tools/i386-any32-linux-musl/activate
+          i386-any32-linux-musl-cc $CFLAGS -DHAVE_STRLCPY -DHAVE_AUFS frugalify.c $LDFLAGS -o frugalify-aufs-i386
+          i386-any32-linux-musl-strip -s -R .note -R .comment frugalify-aufs-i386
+          i386-any32-linux-musl-cc $CFLAGS -DHAVE_STRLCPY frugalify.c $LDFLAGS -o frugalify-overlayfs-i386
+          i386-any32-linux-musl-strip -s -R .note -R .comment frugalify-overlayfs-i386
